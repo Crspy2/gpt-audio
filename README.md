@@ -10,7 +10,14 @@
 ## Setup
 Download executable from __[the latest release](https://github.com/Crspy2/gpt-audio/releases/latest)__
 
-**Or** clone the repositiory: ```git clone https://github.com/Crspy2/gpt-audio.git``` and run  `go run main.go`
+**Or** clone the repositiory: 
+```
+git clone https://github.com/Crspy2/gpt-audio.git
+``` 
+**and run**
+```
+go run main.go
+```
 
 # 📋 TODO
 - [ ] Allow multiple messages in a single conversation
