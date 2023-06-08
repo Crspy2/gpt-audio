@@ -1,5 +1,4 @@
 # 🚀 Installation
----
 ## Prerequisites
 - [OpenAI API Key](https://platform.openai.com/account/api-keys) - Billing Required
 #### The following are only required if you do not download the precompiled binary from the latest release
