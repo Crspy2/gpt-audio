@@ -21,6 +21,7 @@ go run main.go
 
 # 📋 TODO
 - [ ] Allow multiple messages in a single conversation
+- [ ] Add dark mode option
 
 # 🔨 License
 ### This project is released under the MIT License.
