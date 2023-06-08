@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>GPT-Audio</title>
+  </head>
+  
+  <body
+    class="bg-white text-black min-h-screen flex flex-col items-center justify-center"
+  >
+  <input type="text" id="apiKeyInput" class="max-w-[800px] pt-2 pb-2 pl-4 pr-4 mb-4 -mt-4 bg-gray-300 text-gray-600 rounded-md" placeholder="API Key..."/>
+    <div class="lg:w-1/2 2xl:w-1/3 p-8 rounded-md bg-gray-100">
+      <h1 class="text-3xl font-bold mb-6">
+        OpenAI Audio File Analyst
+      </h1>
+      <div id="resultContainer" class="mt-4 h-48 overflow-y-auto">
+        <p class="rounded-md text-gray-500 text-sm mb-2">Generated Text</p>
+        <p id="resultText" class="whitespace-pre-line"></p>
+      </div>
+      <input
+        type="text"
+        id="promptInput"
+        class="w-full px-4 py-2 rounded-md bg-gray-200 placeholder-gray-500 focus:outline-none mt-4"
+        placeholder="Enter prompt..."
+      />
+      <div class="flex justify-center mt-4">
+        <button
+          id="generateBtn"
+          class="w-1/2 px-4 py-2 rounded-md bg-black text-white hover:bg-gray-900 focus:outline-none mr-2 disabled:opacity-75 disabled:cursor-not-allowed"
+        >
+          Generate
+        </button>
+        <button
+          id="stopBtn"
+          disabled
+          class="w-1/2 px-4 py-2 rounded-md border border-gray-500 text-gray-500 hover:text-gray-700 hover:border-gray-700 focus:outline-none ml-2 disabled:opacity-75 disabled:cursor-not-allowed"
+        >
+          Stop
+        </button>
+      </div>
+    <br/>
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+    <input 
+      type="file" 
+      id="audioForm" 
+      name="audio" 
+      accept=".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm" 
+      class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600"
+      required
+    /><br>
+    <button 
+      type="submit" 
+      onclick="setFileName()"
+      class="w-1/2 px-4 py-2 rounded-md bg-black text-white hover:bg-gray-900 focus:outline-none mr-2 disabled:opacity-75 disabled:cursor-not-allowed"
+    >
+      Ingest Audio File
+    </button>
+    </form>
+    <p id="result"></p>
+
+  </div>
+
+  <script>
+    var filename = ""
+    
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+			e.preventDefault();
+			var form = this;
+			var xhr = new XMLHttpRequest();
+			xhr.open(form.method, form.action, true);
+			xhr.onreadystatechange = function() {
+        document.getElementById('result').textContent = xhr.responseText;
+				if (xhr.readyState === 4 && xhr.status === 200) {
+					document.getElementById('result').style.color = "green"
+				} else {
+					document.getElementById('result').style.color = "red"
+        }
+			};
+			xhr.send(new FormData(form));
+		});
+
+		const setFileName = () => {
+			const fileInput = document.getElementById('audioForm');
+			const file = fileInput.files[0];
+      console.log(file)
+			filename = file.name;
+      console.log(filename)
+		}
+
+    const generate = async () => {
+      const apiKey = document.getElementById("apiKeyInput");
+      const promptInput = document.getElementById("promptInput");
+      const generateBtn = document.getElementById("generateBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const resultText = document.getElementById("resultText");
+
+      // Alert the user if no prompt value
+      if (!promptInput.value) {
+          alert("Please enter a prompt.");
+          return;
+      }
+
+      let controller = null; // Store the AbortController instance
+
+      // Disable the generate button and enable the stop button
+      generateBtn.disabled = true;
+      stopBtn.disabled = false;
+      resultText.innerText = "Generating...";
+
+      // Create a new AbortController instance
+      controller = new AbortController();
+      const signal = controller.signal;
+
+      try {
+          // Fetch the response from the OpenAI API with the signal from AbortController
+          const response = await fetch(`/ask`, {
+          method: "GET",
+          headers: {
+              "Content-Type": "application/json",
+              Authorization: apiKey.value,
+              "Prompt": promptInput.value,
+              "FileName": filename
+          },
+          signal, // Pass the signal to the fetch request
+          });
+
+          // Read the response as a stream of data
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          resultText.innerText = "";
+
+          while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+              break;
+          }
+          // Massage and parse the chunk of data
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+          const parsedLines = lines
+              .map((line) => {
+                console.log(line)
+                line.replace(/^data: /, "").trim()
+                resultText.innerText += line
+            }) // Remove the "data: " prefix
+              .filter((line) => line !== "" && line !== "[DONE]") // Remove empty lines and "[DONE]"        
+          }
+      } catch (error) {
+          // Handle fetch request errors
+          if (signal.aborted) {
+          resultText.innerText = "Request aborted.";
+          } else {
+          console.error("Error:", error);
+          resultText.innerText = "Error occurred while generating.";
+          }
+      } finally {
+          // Enable the generate button and disable the stop button
+          generateBtn.disabled = false;
+          stopBtn.disabled = true;
+          controller = null; // Reset the AbortController instance
+      }
+    };
+
+    const stop = () => {
+    // Abort the fetch request by calling abort() on the AbortController instance
+    if (controller) {
+        controller.abort();
+        controller = null;
+    }
+    };
+
+    promptInput.addEventListener("keyup", (event) => {
+      if (event.key === "Enter") {
+          generate();
+      }
+    });
+    generateBtn.addEventListener("click", generate);
+    stopBtn.addEventListener("click", stop);
+  </script>
+  </body>
+</html>
