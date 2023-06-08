@@ -19,7 +19,9 @@ go run main.go
 ```
 
 # 📋 TODO
+- [x] Obfuscate OpenAI API Key on input
 - [ ] Allow multiple messages in a single conversation
+- [ ] Format Markdown Responses
 - [ ] Add dark mode option
 
 # 🔨 License
