@@ -48,14 +48,14 @@ func StreamChat(ctx *gin.Context) {
 
 			req := openai.ChatCompletionRequest{
 				Model:     openai.GPT3Dot5Turbo0301,
-				MaxTokens: 100,
+				MaxTokens: 500,
 				Messages: []openai.ChatCompletionMessage{
 					{
-						Role:    openai.ChatMessageRoleSystem,
+						Role:    "system",
 						Content: "Answer the following question by using information from this transcribed audio file. If you do not know the answer with the information based on this audio file. Do not make up anything. If the answer if common knowledge, then go ahead and tell the user, however if it isn't, just simply say that you don't know the answer to the question. Use full complete, gramatically correct sentences for your responses!\n" + resp.Text,
 					},
 					{
-						Role:    openai.ChatMessageRoleUser,
+						Role:    "user",
 						Content: prompt,
 					},
 				},
